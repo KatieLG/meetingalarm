@@ -1,0 +1,6 @@
+// Defaults, overridden by Secrets.xcconfig (gitignored) if present.
+// Copy Secrets.xcconfig.example to Secrets.xcconfig and fill in your Google OAuth Desktop client.
+GOOGLE_CLIENT_ID =
+GOOGLE_CLIENT_SECRET =
+
+#include? "Secrets.xcconfig"

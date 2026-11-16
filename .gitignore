@@ -1,0 +1,6 @@
+*.xcodeproj
+build/
+Config/Secrets.xcconfig
+MeetingAlarm/Info.plist
+.DS_Store
+xcuserdata/

@@ -1,0 +1,63 @@
+name: MeetingAlarm
+options:
+  bundleIdPrefix: com.meetingalarm
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+configFiles:
+  Debug: Config/App.xcconfig
+  Release: Config/App.xcconfig
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  MeetingAlarm:
+    type: application
+    platform: macOS
+    sources:
+      - path: MeetingAlarm/Sources
+    info:
+      path: MeetingAlarm/Info.plist
+      properties:
+        CFBundleDisplayName: MeetingAlarm
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
+        GoogleClientID: $(GOOGLE_CLIENT_ID)
+        GoogleClientSecret: $(GOOGLE_CLIENT_SECRET)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.meetingalarm.app
+        ENABLE_HARDENED_RUNTIME: NO
+  MeetingAlarmTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: MeetingAlarm/Tests
+    dependencies:
+      - target: MeetingAlarm
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.meetingalarm.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  MeetingAlarm:
+    build:
+      targets:
+        MeetingAlarm: all
+        MeetingAlarmTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - MeetingAlarmTests
+    archive:
+      config: Release
