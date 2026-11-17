@@ -1,4 +1,5 @@
 import AppKit
+import EventKit
 import Foundation
 import Network
 import Observation
@@ -15,12 +16,22 @@ final class MeetingStore {
     private(set) var isSigningIn = false
     var signInError: String?
 
+    // Mac Calendar (EventKit) source
+    private(set) var systemEnabled = UserDefaults.standard.bool(forKey: Prefs.systemCalendarEnabled)
+    private(set) var systemCalendars: [SystemCalendarInfo] = []
+    private(set) var systemMeetings: [Meeting] = []
+    private(set) var disabledSystemCalendarIDs = Set(UserDefaults.standard.stringArray(forKey: Prefs.systemDisabledCalendars) ?? [])
+    private(set) var systemError: String?
+
     @ObservationIgnored private let client = GoogleCalendarClient()
     @ObservationIgnored private var refreshLoop: Task<Void, Never>?
     @ObservationIgnored private var signInTask: Task<Void, Never>?
     @ObservationIgnored private var pathMonitor: NWPathMonitor?
     @ObservationIgnored private var wasOnline = true
     @ObservationIgnored private var wakeObserver: NSObjectProtocol?
+    @ObservationIgnored private var eventStoreObserver: NSObjectProtocol?
+    @ObservationIgnored private let systemSource = SystemCalendarSource()
+    @ObservationIgnored private var knownSystemCalendarIDs = Set(UserDefaults.standard.stringArray(forKey: Prefs.systemKnownCalendars) ?? [])
 
     static let refreshInterval: Duration = .seconds(300)
 
@@ -30,7 +41,7 @@ final class MeetingStore {
 
     /// All meetings, including debug fakes, sorted by start.
     var allMeetings: [Meeting] {
-        EventMapper.dedupe(meetings + debugMeetings)
+        EventMapper.dedupe(meetings + systemMeetings + debugMeetings)
     }
 
     func upcoming(now: Date = Date()) -> [Meeting] {
@@ -58,6 +69,15 @@ final class MeetingStore {
             }
         }
 
+        eventStoreObserver = NotificationCenter.default.addObserver(
+            forName: .EKEventStoreChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard self?.systemEnabled == true else { return }
+                await self?.refresh()
+            }
+        }
+
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -77,7 +97,7 @@ final class MeetingStore {
     // MARK: Refresh
 
     func refresh() async {
-        guard !isRefreshing, !accounts.isEmpty else { return }
+        guard !isRefreshing, !accounts.isEmpty || systemEnabled else { return }
         isRefreshing = true
         defer { isRefreshing = false }
 
@@ -114,8 +134,76 @@ final class MeetingStore {
 
         let liveEmails = Set(accounts.map(\.email))
         meetings = EventMapper.dedupe(collected.filter { liveEmails.contains($0.accountEmail) })
+        refreshSystem(from: from, to: to)
         lastRefresh = Date()
         saveAccounts()
+    }
+
+    private func refreshSystem(from: Date, to: Date) {
+        guard systemEnabled else {
+            systemMeetings = []
+            return
+        }
+        guard systemSource.hasAccess else {
+            systemError = systemSource.isDenied
+                ? "Calendar access is denied. Allow MeetingAlarm in System Settings → Privacy & Security → Calendars."
+                : "Calendar access has not been granted."
+            return
+        }
+        systemError = nil
+        let calendars = systemSource.calendars()
+        for calendar in calendars where !knownSystemCalendarIDs.contains(calendar.id) {
+            if calendar.startsDisabled { disabledSystemCalendarIDs.insert(calendar.id) }
+            knownSystemCalendarIDs.insert(calendar.id)
+        }
+        systemCalendars = calendars
+        let enabled = Set(calendars.map(\.id)).subtracting(disabledSystemCalendarIDs)
+        systemMeetings = systemSource.meetings(calendarIDs: enabled, from: from, to: to)
+        saveSystemPrefs()
+    }
+
+    // MARK: Mac Calendar
+
+    func setSystemEnabled(_ enabled: Bool) {
+        guard enabled else {
+            systemEnabled = false
+            systemMeetings = []
+            systemError = nil
+            saveSystemPrefs()
+            return
+        }
+        Task {
+            do {
+                if try await systemSource.requestAccess() {
+                    systemEnabled = true
+                    saveSystemPrefs()
+                    await refresh()
+                } else {
+                    systemEnabled = false
+                    systemError = "Calendar access was not granted. Allow MeetingAlarm in System Settings → Privacy & Security → Calendars."
+                }
+            } catch {
+                systemEnabled = false
+                systemError = error.localizedDescription
+            }
+        }
+    }
+
+    func setSystemCalendar(_ calendarID: String, enabled: Bool) {
+        if enabled {
+            disabledSystemCalendarIDs.remove(calendarID)
+        } else {
+            disabledSystemCalendarIDs.insert(calendarID)
+        }
+        saveSystemPrefs()
+        Task { await refresh() }
+    }
+
+    private func saveSystemPrefs() {
+        let d = UserDefaults.standard
+        d.set(systemEnabled, forKey: Prefs.systemCalendarEnabled)
+        d.set(Array(disabledSystemCalendarIDs), forKey: Prefs.systemDisabledCalendars)
+        d.set(Array(knownSystemCalendarIDs), forKey: Prefs.systemKnownCalendars)
     }
 
     // MARK: Accounts

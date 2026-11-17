@@ -46,7 +46,7 @@ struct OverlayContent: View {
         VStack(alignment: .leading, spacing: 6 * scale) {
             HStack(alignment: .top, spacing: 8 * scale) {
                 Circle()
-                    .fill(Color(hex: meeting.colorHex) ?? .accentColor)
+                    .fill(Color.forAccount(meeting.accountEmail))
                     .frame(width: 8 * scale, height: 8 * scale)
                     .padding(.top, 5 * scale)
                 VStack(alignment: .leading, spacing: 2 * scale) {

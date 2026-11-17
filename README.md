@@ -15,7 +15,14 @@ All three thresholds can be changed in Settings → Alerts. Only meetings with a
 - Xcode 16+ (built with Xcode 27)
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
 
-## Google setup (one-time)
+## Choosing a calendar source
+
+In Settings → Accounts you can use either or both:
+
+- **Mac Calendar (easiest, no setup):** add your Google/work accounts in System Settings → Internet Accounts, then turn on *Use calendars from the Mac Calendar app* and grant calendar access. No Google Cloud project or OAuth client needed.
+- **Direct Google accounts:** needs your own OAuth client, see below.
+
+## Google setup (one-time, only for direct Google accounts)
 
 The app talks to the Google Calendar API directly, so it needs your own OAuth client:
 

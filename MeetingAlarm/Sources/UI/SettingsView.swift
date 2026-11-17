@@ -23,15 +23,69 @@ struct SettingsView: View {
 private struct AccountsSettings: View {
     @Environment(MeetingStore.self) private var store
 
+    private var colorAccounts: [String] {
+        var names = store.accounts.map(\.email)
+        if store.systemEnabled {
+            for name in store.systemCalendars.map(\.sourceName) where !names.contains(name) { names.append(name) }
+        }
+        return names.sorted()
+    }
+
     var body: some View {
         Form {
+            Section {
+                Toggle("Use calendars from the Mac Calendar app", isOn: Binding(
+                    get: { store.systemEnabled },
+                    set: { store.setSystemEnabled($0) }
+                ))
+                if let error = store.systemError {
+                    Text(error).font(.caption).foregroundStyle(.orange)
+                }
+                if store.systemEnabled {
+                    ForEach(store.systemCalendars) { calendar in
+                        Toggle(isOn: Binding(
+                            get: { !store.disabledSystemCalendarIDs.contains(calendar.id) },
+                            set: { store.setSystemCalendar(calendar.id, enabled: $0) }
+                        )) {
+                            HStack(spacing: 6) {
+                                Circle().fill(Color(hex: calendar.colorHex) ?? .accentColor).frame(width: 9, height: 9)
+                                Text(calendar.name)
+                                Text(calendar.sourceName).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Mac Calendar")
+            } footer: {
+                Text("Add Google (or other) accounts in System Settings → Internet Accounts, and they appear here. No Google Cloud setup needed.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             if !store.oauthConfigured {
                 Section {
-                    Label(GoogleAuthError.notConfigured.localizedDescription, systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                    Label("Direct Google sign-in isn't set up (optional). See the README, or use Mac Calendar above.", systemImage: "info.circle")
+                        .foregroundStyle(.secondary)
                 }
             }
-            Section("Google accounts") {
+            Section {
+                ForEach(colorAccounts, id: \.self) { name in
+                    HStack {
+                        ColorPicker(name, selection: Binding(
+                            get: { Color.forAccount(name) },
+                            set: { AccountColors.shared.set($0, for: name) }
+                        ), supportsOpacity: false)
+                        if AccountColors.shared.isCustom(name) {
+                            Button("Reset") { AccountColors.shared.reset(name) }
+                        }
+                    }
+                }
+            } header: {
+                Text("Account colours")
+            } footer: {
+                Text("The stripe next to each meeting uses its account's colour.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Google accounts (direct)") {
                 if store.accounts.isEmpty {
                     Text("No accounts connected yet.").foregroundStyle(.secondary)
                 }

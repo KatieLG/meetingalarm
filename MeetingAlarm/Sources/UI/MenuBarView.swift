@@ -19,6 +19,7 @@ struct MenuBarView: View {
     @Environment(MeetingStore.self) private var store
     @Environment(AlertCoordinator.self) private var coordinator
     @Environment(\.openSettings) private var openSettings
+    @AppStorage(Prefs.showMeetingsWithoutLink) private var showWithoutLink = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -41,6 +42,13 @@ struct MenuBarView: View {
         HStack {
             Text("Upcoming meetings").font(.headline)
             Spacer()
+            Toggle(isOn: $showWithoutLink) {
+                Image(systemName: showWithoutLink ? "link.badge.plus" : "link")
+            }
+            .toggleStyle(.button)
+            .buttonStyle(.borderless)
+            .help(showWithoutLink ? "Showing all meetings. Click to show only meetings with a join link."
+                                  : "Showing only meetings with a join link. Click to show all.")
             if store.isRefreshing {
                 ProgressView().controlSize(.small)
             } else if let last = store.lastRefresh {
@@ -55,19 +63,19 @@ struct MenuBarView: View {
 
     @ViewBuilder
     private func content(now: Date) -> some View {
-        let upcoming = store.upcoming(now: now)
-        if store.accounts.isEmpty && upcoming.isEmpty {
+        let upcoming = store.upcoming(now: now).filter { showWithoutLink || $0.joinURL != nil }
+        if store.accounts.isEmpty && !store.systemEnabled && upcoming.isEmpty {
             VStack(spacing: 10) {
                 Image(systemName: "person.crop.circle.badge.plus")
                     .font(.largeTitle)
                     .foregroundStyle(.secondary)
-                Text("No Google accounts connected")
-                Button("Add Google Account…") { showSettings() }
+                Text("No calendars connected")
+                Button("Connect Calendars…") { showSettings() }
             }
             .frame(maxWidth: .infinity)
             .padding(24)
         } else if upcoming.isEmpty {
-            Text("Nothing scheduled for today or tomorrow.")
+            Text(showWithoutLink ? "Nothing scheduled for today or tomorrow." : "No meetings with a join link today or tomorrow.")
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .padding(24)
@@ -167,7 +175,7 @@ private struct MeetingRow: View {
         let soon = meeting.start.timeIntervalSince(now) <= 600
         HStack(alignment: .center, spacing: 10) {
             RoundedRectangle(cornerRadius: 2)
-                .fill(Color(hex: meeting.colorHex) ?? .accentColor)
+                .fill(Color.forAccount(meeting.accountEmail))
                 .frame(width: 4, height: 34)
             VStack(alignment: .leading, spacing: 2) {
                 Text(meeting.title)

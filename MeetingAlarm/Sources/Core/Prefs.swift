@@ -25,7 +25,12 @@ nonisolated enum Prefs {
     static let takeoverLead = "takeoverLeadSeconds"
     static let takeoverSound = "takeoverSound"
     static let accounts = "accounts"
+    static let showMeetingsWithoutLink = "showMeetingsWithoutLink"
+    static let accountColors = "accountColors"
     static let dismissedAlerts = "dismissedAlerts"
+    static let systemCalendarEnabled = "systemCalendarEnabled"
+    static let systemDisabledCalendars = "systemDisabledCalendars"
+    static let systemKnownCalendars = "systemKnownCalendars"
 
     static let defaultCorner = OverlayCorner.topRight.rawValue
     static let defaultScale = 1.0
@@ -43,6 +48,7 @@ nonisolated enum Prefs {
             joinLead: defaultJoinLead,
             takeoverLead: defaultTakeoverLead,
             takeoverSound: true,
+            showMeetingsWithoutLink: true,
         ])
     }
 
