@@ -11,7 +11,7 @@ A macOS menu bar app that counts down to your next video call, then takes over t
 
 ## Hard to miss, one click to join
 
-<p align="center"><img src="docs/screenshots/meetingalarm-takeover.gif" width="800" alt="A corner overlay counts down from 0:35 to a Zoom meeting, then the whole screen dims and shows the meeting title, a large countdown, and Dismiss and Join Zoom buttons."></p>
+<p align="center"><img src="docs/screenshots/meetingalarm-takeover.webp" width="800" alt="A corner overlay counts down from 0:33 to a Zoom meeting, then the whole screen dims and shows the meeting title, a large countdown, and Dismiss and Join Zoom buttons."></p>
 
 The full-screen alert stays up until you click **Join** or **Dismiss**. Dismissed meetings stay dismissed, unless the meeting moves to a new time.
 
