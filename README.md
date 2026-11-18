@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/icon.png" width="112" alt="MeetingAlarm icon: a calendar with a clock in the corner">
+
 # MeetingAlarm
 
 **An alarm clock for meetings.**<br>

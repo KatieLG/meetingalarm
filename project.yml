@@ -22,6 +22,7 @@ targets:
     platform: macOS
     sources:
       - path: MeetingAlarm/Sources
+      - path: MeetingAlarm/Resources
     info:
       path: MeetingAlarm/Info.plist
       properties:
@@ -37,6 +38,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.meetingalarm.app
         ENABLE_HARDENED_RUNTIME: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   MeetingAlarmTests:
     type: bundle.unit-test
     platform: macOS
