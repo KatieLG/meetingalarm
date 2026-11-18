@@ -19,8 +19,8 @@ The full-screen alert stays up until you click **Join** or **Dismiss**. Dismisse
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/screenshots/meetingalarm-menu.png" alt="The menu bar popover listing today's and tomorrow's meetings, each with its time, account and a Join button."></td>
-    <td width="50%"><img src="docs/screenshots/meetingalarm-overlay.png" alt="A translucent overlay in the top-right corner showing Design review starting in 1:35, with a Join Zoom button."></td>
+    <td width="50%"><img src="docs/screenshots/meetingalarm-menu.jpg" alt="The menu bar popover listing today's and tomorrow's meetings, each with its time, account and a Join button."></td>
+    <td width="50%"><img src="docs/screenshots/meetingalarm-overlay.jpg" alt="A translucent overlay in the top-right corner showing Design review starting in 1:35, with a Join Zoom button."></td>
   </tr>
   <tr>
     <td align="center">Today and tomorrow at a glance. The menu bar counts down once a call is close.</td>
