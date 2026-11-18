@@ -1,76 +1,62 @@
+<div align="center">
+
 # MeetingAlarm
 
-A macOS menu bar app that keeps an eye on your Google calendars and makes sure you never miss a meeting.
+**An alarm clock for meetings.**<br>
+A macOS menu bar app that counts down to your next video call, then takes over the screen when it's time to join.
 
-- **Menu bar list** of today's and tomorrow's meetings from any number of Google accounts, each with a Join button when a video link is found (Google Meet, Zoom, Teams, Webex, Whereby, Around, Chime, Slack huddles).
-- **10 minutes before:** a translucent overlay in a screen corner with a live countdown. Corner, size and opacity are configurable.
-- **2 minutes before:** a Join button appears on the overlay.
-- **30 seconds before:** the whole screen (every display) is taken over until you click **Join** or **Dismiss**.
+</div>
 
-All three thresholds can be changed in Settings → Alerts. Only meetings with a video link trigger alerts. All-day, declined, out-of-office and focus-time events are ignored.
+## Hard to miss, one click to join
 
-## Requirements
+<p align="center"><img src="docs/screenshots/meetingalarm-takeover.gif" width="800" alt="A corner overlay counts down from 0:35 to a Zoom meeting, then the whole screen dims and shows the meeting title, a large countdown, and Dismiss and Join Zoom buttons."></p>
 
-- macOS 15+
-- Xcode 16+ (built with Xcode 27)
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
+The full-screen alert stays up until you click **Join** or **Dismiss**. Dismissed meetings stay dismissed, unless the meeting moves to a new time.
 
-## Choosing a calendar source
+## In your menu bar, then in the corner
 
-In Settings → Accounts you can use either or both:
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/meetingalarm-menu.png" alt="The menu bar popover listing today's and tomorrow's meetings, each with its time, account and a Join button."></td>
+    <td width="50%"><img src="docs/screenshots/meetingalarm-overlay.png" alt="A translucent overlay in the top-right corner showing Design review starting in 1:35, with a Join Zoom button."></td>
+  </tr>
+  <tr>
+    <td align="center">Today and tomorrow at a glance. The menu bar counts down once a call is close.</td>
+    <td align="center">From 10 minutes out, a live countdown in the corner. The Join button appears at 2 minutes.</td>
+  </tr>
+</table>
 
-- **Mac Calendar (easiest, no setup):** add your Google/work accounts in System Settings → Internet Accounts, then turn on *Use calendars from the Mac Calendar app* and grant calendar access. No Google Cloud project or OAuth client needed.
-- **Direct Google accounts:** needs your own OAuth client, see below.
+## Only the meetings you'll actually join
 
-## Google setup (one-time, only for direct Google accounts)
+- **Finds the call link** for Google Meet, Zoom, Teams, Webex, Whereby, Around, Chime and Slack huddles, in the event's conference details, location or notes. Only meetings with a link alert you.
+- **Skips the rest:** all-day, cancelled and declined events never alert.
+- **Every account in one list**, each with its own colour. Work, personal and client calendars all count down together.
+- **Your timings:** choose when the overlay, Join button and takeover appear, and where the overlay sits, how big and how see-through.
+- **Stays current:** refreshes every 5 minutes, on wake and when the network comes back. Can launch at login.
 
-The app talks to the Google Calendar API directly, so it needs your own OAuth client:
+## Install
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/), create a project (e.g. "MeetingAlarm").
-2. **APIs & Services → Library**, then enable the **Google Calendar API**.
-3. **APIs & Services → OAuth consent screen**: choose *External*, fill in the app name and your email. Under *Test users*, add every Google account you want to connect. Leaving it in *Testing* mode is fine for personal use.
-   - Note: refresh tokens for apps in Testing mode expire after 7 days, so you will have to click **Reconnect** weekly. To avoid that, publish the app (*Publish app* on the consent screen). Unverified apps are fine for personal use; Google shows a warning screen you can click through.
-4. **APIs & Services → Credentials → Create credentials → OAuth client ID**, application type **Desktop app**.
-5. Copy `Config/Secrets.xcconfig.example` to `Config/Secrets.xcconfig` and paste in the client ID and secret. (For desktop apps the "secret" is not truly secret, but it is still kept out of git.)
-
-## Build and run
-
-```sh
-make test    # unit tests
-make run     # build Debug and launch
-make build   # build only
-```
-
-`make gen` regenerates `MeetingAlarm.xcodeproj` from `project.yml` if you want to open it in Xcode.
-
-Then click the calendar icon in the menu bar → **Settings… → Accounts → Add Google Account…**. Sign in in your browser and return to the app. Repeat for each account. Expand an account to choose which calendars are watched (calendars hidden in Google Calendar start disabled).
-
-## Testing alerts without a real meeting
-
-Debug builds have a row of buttons in the menu bar popover (**+11m**, **+2:10**, **+0:40**) that add fake meetings. You can also launch with:
+MeetingAlarm is built from source. You need macOS 15+, Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
-open build/Build/Products/Debug/MeetingAlarm.app --args -debugMeetings 40,130,660
+brew install xcodegen
+git clone https://github.com/KatieLG/meetingalarm.git
+cd meetingalarm
+make build
+open build/Build/Products/Debug/MeetingAlarm.app
 ```
 
-## Notes
+Move the app to `/Applications` to keep it. Then click the calendar icon in the menu bar, open **Settings… → Accounts**, turn on **Use calendars from the Mac Calendar app** and allow calendar access. Any account you've added in System Settings → Internet Accounts (Google, iCloud, Exchange and others) shows up, and you can choose which calendars to watch.
 
-- Refresh tokens live in the login Keychain. The build is ad-hoc signed, so after a rebuild macOS may ask once per account whether MeetingAlarm can access its keychain item. Choose **Always Allow**.
-- Calendars refresh every 5 minutes, on wake from sleep and when the network comes back.
-- Dismissing (or joining) a meeting is remembered across relaunches. If the meeting is moved to a new time it will alert again.
-- The × on the overlay only hides the overlay; the full-screen alert still appears at 30 s.
+## Direct Google sign-in (optional)
 
-## Layout
+If you'd rather not add your Google accounts to macOS, MeetingAlarm can read them directly. This needs your own OAuth client, and also skips Google's out-of-office and focus-time events.
 
-```
-project.yml                 XcodeGen spec
-Config/                     xcconfig (+ gitignored Secrets.xcconfig)
-MeetingAlarm/Sources/
-  App/                      @main, app delegate
-  Auth/                     OAuth (PKCE + loopback), Keychain
-  Calendar/                 Google API client, models, join-link extraction
-  Core/                     MeetingStore, AlertPlanner (pure logic), AlertCoordinator, Prefs
-  UI/                       Menu bar, overlay panel, full-screen takeover, settings
-  Debug/                    Debug-only fake meetings
-MeetingAlarm/Tests/         Swift Testing unit tests
-```
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Google Calendar API**.
+2. Under **OAuth consent screen**, choose *External* and add each Google account you want to connect as a test user. In *Testing* mode, sign-ins expire after 7 days and need **Reconnect**. Publishing the app avoids that; Google shows a warning screen you can click through.
+3. Under **Credentials**, create an **OAuth client ID** of type **Desktop app**.
+4. Copy `Config/Secrets.xcconfig.example` to `Config/Secrets.xcconfig`, paste in the client ID and secret, and run `make build` again.
+
+Then use **Settings… → Accounts → Add Google Account…** and sign in in your browser.
+
+<sub>Everything runs on your Mac: calendars are read straight from Google or the Mac Calendar database, and Google sign-ins are kept in the login Keychain. Builds are ad-hoc signed, so after a rebuild macOS may ask once to allow Keychain access; choose Always Allow. Debug builds have buttons in the popover that add fake meetings at +11m, +2:10 and +0:40, or launch with `--args -debugMeetings 40,130,660`. Run the tests with `make test`.</sub>
